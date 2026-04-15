@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movie Suggestions</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="offline-banner" class="offline-banner">Your internet is turned off</div>
+  <main class="hero">
+    <div class="hero__content">
+      <header class="hero__header">
+        <h1 class="hero__title">Find your film</h1>
+        <a class="watchlist-btn" href="watchlist.html">My Watchlist</a>
+      </header>
+      <section class="search-card">
+        <p>Search movies, build your watchlist, and discover new favorites.</p>
+        <form class="search-form">
+          <label class="visually-hidden" for="movie-search">Search for a movie</label>
+          <input
+            id="movie-search"
+            class="search-input"
+            type="search"
+            placeholder="Search for a movie"
+            autocomplete="off"
+          />
+          <button type="submit" class="search-button">Search</button>
+        </form>
+        <div class="filter-controls">
+          <label class="filter-checkbox">
+            <input type="checkbox" id="high-rating-filter" />
+            <span>High Rating (7+)</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="search-results hidden" id="results">
+        <div class="movie-results" id="movie-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <section class="empty-state" id="empty-state">
+    <div class="empty-state__icon"></div>
+    <p>Start exploring</p>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
