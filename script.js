@@ -166,15 +166,28 @@ function renderMovies(movies) {
     .join('');
 }
 
-function renderWatchlist() {
-  const saved = getWatchlist();
-  if (saved.length > 0) {
-    const sorted = sortMoviesByRating(saved);
-    renderMovies(sorted);
+function updateDisplay(movies, emptyMessage = 'No movies found') {
+  currentSearchResults = movies;
+  const sorted = sortMoviesByRating(movies);
+  const filtered = applyRatingFilter(sorted);
+
+  if (filtered.length > 0) {
+    renderMovies(filtered);
     toggleSections(true);
+  } else {
+    setEmptyMessage(filterByHighRating ? 'No high-rated movies found' : emptyMessage);
+    toggleSections(false);
+  }
+}
+
+function renderWatchlist(displayMovies = null) {
+  const saved = displayMovies || getWatchlist();
+  if (saved.length > 0) {
+    updateDisplay(saved, 'Your watchlist is empty');
   } else {
     setEmptyMessage('Your watchlist is empty');
     toggleSections(false);
+    currentSearchResults = [];
   }
 }
 
@@ -200,32 +213,29 @@ movieList?.addEventListener('click', event => {
     if (isWatchlistPage) {
       renderWatchlist();
     } else {
-      renderMovies(currentSearchResults);
+      updateDisplay(currentSearchResults, 'No movies found');
       saveSearchResults(currentSearchResults, searchInput?.value.trim() || '');
     }
   }
 
   if (action === 'remove') {
     const movieCard = button.closest('.movie-card');
-    if (movieCard) {
-      movieCard.classList.add('deleting');
-      setTimeout(() => {
-        removeMovieFromWatchlist(imdbID);
-        if (isWatchlistPage) {
-          renderWatchlist();
-        } else {
-          renderMovies(currentSearchResults);
-          saveSearchResults(currentSearchResults, searchInput?.value.trim() || '');
-        }
-      }, 500);
-    } else {
+    const finalizeRemoval = () => {
       removeMovieFromWatchlist(imdbID);
       if (isWatchlistPage) {
-        renderWatchlist();
+        currentSearchResults = currentSearchResults.filter(item => item.imdbID !== imdbID);
+        renderWatchlist(currentSearchResults);
       } else {
-        renderMovies(currentSearchResults);
+        updateDisplay(currentSearchResults.filter(item => item.imdbID !== imdbID), 'No movies found');
         saveSearchResults(currentSearchResults, searchInput?.value.trim() || '');
       }
+    };
+
+    if (movieCard) {
+      movieCard.classList.add('deleting');
+      setTimeout(finalizeRemoval, 500);
+    } else {
+      finalizeRemoval();
     }
   }
 });
@@ -241,19 +251,12 @@ async function performSearch() {
     if (isWatchlistPage) {
       const saved = getWatchlist();
       const sorted = sortMoviesByRating(saved);
-      const filtered = applyRatingFilter(sorted);
-      if (filtered.length > 0) {
-        currentSearchResults = filtered;
-        renderMovies(filtered);
-        toggleSections(true);
-      } else {
-        setEmptyMessage(filterByHighRating ? 'No high-rated movies in your watchlist' : 'Your watchlist is empty');
-        toggleSections(false);
-      }
-    } else {
-      setEmptyMessage('Type a movie name to search.');
-      toggleSections(false);
+      updateDisplay(sorted, filterByHighRating ? 'No high-rated movies in your watchlist' : 'Your watchlist is empty');
+      return;
     }
+
+    setEmptyMessage('Type a movie name to search.');
+    toggleSections(false);
     return;
   }
 
@@ -269,16 +272,8 @@ async function performSearch() {
       );
     });
 
-    const sorted = sortMoviesByRating(filtered);
-    const ratingFiltered = applyRatingFilter(sorted);
-    if (ratingFiltered.length > 0) {
-      currentSearchResults = filtered;
-      renderMovies(ratingFiltered);
-      toggleSections(true);
-    } else {
-      setEmptyMessage('No movies found in your watchlist');
-      toggleSections(false);
-    }
+    currentSearchResults = filtered;
+    updateDisplay(filtered, 'No movies found in your watchlist');
     return;
   }
 
@@ -294,10 +289,7 @@ async function performSearch() {
       );
 
       currentSearchResults = details;
-      const sorted = sortMoviesByRating(details);
-      const ratingFiltered = applyRatingFilter(sorted);
-      renderMovies(ratingFiltered);
-      toggleSections(true);
+      updateDisplay(details, searchData.Error || 'No results found');
       saveSearchResults(details, query);
     } else {
       setEmptyMessage(searchData.Error || 'No results found');
@@ -319,16 +311,19 @@ searchInput?.addEventListener('input', () => {
 
 ratingFilterInput?.addEventListener('change', event => {
   filterByHighRating = event.target.checked;
-  if (currentSearchResults.length > 0) {
-    const sorted = sortMoviesByRating(currentSearchResults);
-    const filtered = applyRatingFilter(sorted);
-    if (filtered.length > 0) {
-      renderMovies(filtered);
-      toggleSections(true);
-    } else {
-      setEmptyMessage(filterByHighRating ? 'No high-rated movies found' : 'No movies found');
-      toggleSections(false);
-    }
+  if (isWatchlistPage && currentSearchResults.length === 0) {
+    const saved = getWatchlist();
+    currentSearchResults = sortMoviesByRating(saved);
+  }
+
+  const sorted = sortMoviesByRating(currentSearchResults);
+  const filtered = applyRatingFilter(sorted);
+  if (filtered.length > 0) {
+    renderMovies(filtered);
+    toggleSections(true);
+  } else {
+    setEmptyMessage(isWatchlistPage ? 'No high-rated movies in your watchlist' : 'No high-rated movies found');
+    toggleSections(false);
   }
 });
 
@@ -351,16 +346,10 @@ if (isWatchlistPage) {
   if (!loadSearchResults()) {
     toggleSections(false);
   } else {
-    const sorted = sortMoviesByRating(currentSearchResults);
-    const filtered = applyRatingFilter(sorted);
-    if (filtered.length > 0) {
-      renderMovies(filtered);
-      toggleSections(true);
-    }
+    updateDisplay(currentSearchResults, 'No movies found');
   }
 }
 
-// Offline banner functionality
 const offlineBanner = document.getElementById('offline-banner');
 
 function updateOfflineBanner() {
