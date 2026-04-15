@@ -181,7 +181,7 @@ function updateDisplay(movies, emptyMessage = 'No movies found') {
 }
 
 function renderWatchlist(displayMovies = null) {
-  const saved = displayMovies || getWatchlist();
+  const saved = displayMovies !== null ? displayMovies : getWatchlist();
   if (saved.length > 0) {
     updateDisplay(saved, 'Your watchlist is empty');
   } else {
@@ -210,12 +210,18 @@ movieList?.addEventListener('click', event => {
     const movie = currentSearchResults.find(item => item.imdbID === imdbID);
     if (!movie) return;
     addMovieToWatchlist(movie);
+
     if (isWatchlistPage) {
       renderWatchlist();
-    } else {
-      updateDisplay(currentSearchResults, 'No movies found');
-      saveSearchResults(currentSearchResults, searchInput?.value.trim() || '');
+      return;
     }
+
+    button.dataset.action = 'remove';
+    button.textContent = 'Remove';
+    button.classList.add('remove');
+    button.classList.remove('saved');
+    saveSearchResults(currentSearchResults, searchInput?.value.trim() || '');
+    return;
   }
 
   if (action === 'remove') {
